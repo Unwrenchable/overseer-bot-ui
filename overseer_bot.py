@@ -739,10 +739,9 @@ def monitoring_dashboard():
             
             async function checkWalletStatus() {
                 try {
+                    // Browser will automatically send HTTP Basic Auth credentials
                     const response = await fetch('/api/wallet/status', {
-                        headers: {
-                            'Authorization': 'Basic ' + btoa('{{ admin_user }}:{{ admin_pass }}')
-                        }
+                        credentials: 'include'
                     });
                     const data = await response.json();
                     const resultBox = document.getElementById('wallet-status-result');
@@ -766,9 +765,9 @@ def monitoring_dashboard():
                     const response = await fetch('/api/wallet/check-token', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Basic ' + btoa('{{ admin_user }}:{{ admin_pass }}')
+                            'Content-Type': 'application/json'
                         },
+                        credentials: 'include',
                         body: JSON.stringify({ token_address: address, chain: chain })
                     });
                     const data = await response.json();
@@ -814,9 +813,9 @@ def monitoring_dashboard():
                     const response = await fetch('/api/price/check', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Basic ' + btoa('{{ admin_user }}:{{ admin_pass }}')
+                            'Content-Type': 'application/json'
                         },
+                        credentials: 'include',
                         body: JSON.stringify({ symbol: symbol, exchange: exchange })
                     });
                     const data = await response.json();
@@ -1055,8 +1054,7 @@ curl -u {{ admin_user }}:PASSWORD https://your-domain.com/api/status
         jobs=jobs_info,
         activities=activities_copy,
         wallet_enabled=WALLET_ENABLED and ENABLE_WALLET_UI,
-        admin_user=ADMIN_USERNAME,
-        admin_pass=ADMIN_PASSWORD
+        admin_user=ADMIN_USERNAME
     )
 
 @app.route("/api/status")
