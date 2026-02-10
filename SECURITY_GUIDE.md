@@ -137,8 +137,8 @@ Edit Token-scalper's `config.json`:
 **How to set matching keys:**
 1. Generate one key: `openssl rand -hex 32`
 2. Use the SAME key in BOTH places:
-   - In Overseer Bot's `.env` file: `WEBHOOK_API_KEY=<generated_key>`
-   - In Token-scalper's `config.json`: `"overseer_api_key": "<same_generated_key>"`
+   - In Overseer Bot's `.env` file: `WEBHOOK_API_KEY=<your_generated_key_here>`
+   - In Token-scalper's `config.json`: `"overseer_api_key": "<your_generated_key_here>"`
 3. The keys must be identical for webhooks to work
 
 **⚠️ IMPORTANT:** 
