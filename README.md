@@ -237,8 +237,6 @@ Comprehensive documentation available:
   - Manual token safety checking
   - Manual price checking
   - API usage examples
-  - RPC endpoint configuration
-  - Alert types and monitoring
 
 ### Quick Reference
 
