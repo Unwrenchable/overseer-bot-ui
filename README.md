@@ -129,9 +129,21 @@ Login with credentials from your `.env` file:
 
 ## ⚙️ Configuration
 
-### Required Environment Variables
+### ⚠️ About .env Files
 
-Create a `.env` file with these required variables:
+**Important Security Note:**
+- The repository includes `.env.example` as a **TEMPLATE** (committed to Git)
+- `.env.example` contains NO actual secrets, only placeholders
+- You must create your own `.env` file for actual secrets (NOT committed to Git)
+
+### Setup Environment Variables
+
+**Step 1:** Copy the template:
+```bash
+cp .env.example .env
+```
+
+**Step 2:** Edit YOUR `.env` file (not .env.example!) with actual values:
 
 ```env
 # Twitter API Credentials (Required)
@@ -155,6 +167,11 @@ HUGGING_FACE_TOKEN=your_hugging_face_token  # For AI responses
 WEBHOOK_API_KEY=your_webhook_api_key        # For external webhooks
 PORT=5000                                    # Web server port
 ```
+
+**⚠️ CRITICAL:**
+- NEVER commit your `.env` file (it's in `.gitignore`)
+- NEVER put actual secrets in `.env.example`
+- For cloud deployments, use platform environment variables instead
 
 ### Generate Secure Credentials
 
