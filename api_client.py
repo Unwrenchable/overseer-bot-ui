@@ -50,8 +50,12 @@ def add_alert(alert_type: str, source: str, data: dict, message: str = None):
     Args:
         alert_type: Type of alert (e.g., 'trade', 'rugpull', 'airdrop', 'status')
         source: Source system (e.g., 'overseer-bot-ai', 'token-scalper')
-        data: Alert data dictionary
+        data: Alert data dictionary (should contain only essential fields to avoid memory issues)
         message: Optional human-readable message
+    
+    Note: The data dictionary is stored as-is. Ensure external APIs return 
+    reasonably-sized data objects. Consider extracting only essential fields 
+    if the external API returns large responses.
     """
     global ALERT_HISTORY
     with ALERT_HISTORY_LOCK:
@@ -64,7 +68,7 @@ def add_alert(alert_type: str, source: str, data: dict, message: str = None):
         }
         ALERT_HISTORY.append(alert)
         
-        # Keep only the most recent alerts
+        # Keep only the most recent alerts (bounded memory usage)
         if len(ALERT_HISTORY) > MAX_ALERTS:
             ALERT_HISTORY = ALERT_HISTORY[-MAX_ALERTS:]
         
@@ -227,7 +231,16 @@ def fetch_token_scalper_status() -> Optional[dict]:
 def poll_external_apis():
     """
     Main polling loop - fetches data from external APIs periodically
-    Runs in a background thread
+    Runs in a background daemon thread
+    
+    Note: This is an infinite loop that runs as a daemon thread. The thread
+    will be automatically terminated when the main application exits. No
+    explicit shutdown handling is required since this is a daemon thread.
+    
+    For production use, consider implementing graceful shutdown if needed:
+    - Use a threading.Event() to signal shutdown
+    - Check the event in the loop: while not shutdown_event.is_set()
+    - Set the event from main thread on shutdown
     """
     logging.info(f"Starting API polling (interval: {POLL_INTERVAL}s)")
     

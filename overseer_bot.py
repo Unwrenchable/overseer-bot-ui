@@ -898,7 +898,9 @@ def monitoring_dashboard():
                         data.alerts.forEach(alert => {
                             const alertClass = 'alert-' + alert.type;
                             alertsHTML += '<div class="alert-item ' + alertClass + '">';
-                            alertsHTML += '<div class="alert-time">' + alert.timestamp.substring(0, 19) + '</div>';
+                            // Safely extract timestamp string (first 19 chars for YYYY-MM-DD HH:MM:SS)
+                            const timestamp = alert.timestamp ? String(alert.timestamp).substring(0, 19) : 'N/A';
+                            alertsHTML += '<div class="alert-time">' + timestamp + '</div>';
                             alertsHTML += '<div class="alert-source">[' + alert.source.toUpperCase() + ']</div>';
                             alertsHTML += '<div><strong>' + alert.type.toUpperCase() + ':</strong> ' + alert.message + '</div>';
                             alertsHTML += '</div>';
@@ -935,7 +937,9 @@ def monitoring_dashboard():
                 statusElem.className = 'health-status ' + statusClass;
                 
                 if (health.last_check) {
-                    lastCheckElem.textContent = 'Last check: ' + health.last_check.substring(0, 19);
+                    // Safely extract timestamp string (first 19 chars for YYYY-MM-DD HH:MM:SS)
+                    const lastCheck = String(health.last_check).substring(0, 19);
+                    lastCheckElem.textContent = 'Last check: ' + lastCheck;
                 } else {
                     lastCheckElem.textContent = 'Not checked yet';
                 }
