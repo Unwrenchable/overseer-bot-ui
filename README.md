@@ -44,6 +44,8 @@
 - 💰 Token-scalper alerts (rug pulls, high potential, airdrops)
 - 🌐 MoonPay funding notifications
 - 🗺️ Location claim announcements
+- 🔗 **External API integration** (overseer-bot-ai, Token-scalper) - NEW!
+- 📡 **Unified alert dashboard** with health monitoring - NEW!
 
 ### Monitoring Dashboard
 - 🖥️ Beautiful Vault-Tec themed web UI with **tabbed interface**
@@ -124,8 +126,12 @@ Login with credentials from your `.env` file:
 - 💰 **Wallet Tab** - View wallet balances (Solana, ETH, BSC)
 - 🔧 **Tools Tab** - Manual token safety checker & price checker
 - 🔗 **API Tab** - Complete API documentation
+- 🚨 **Alerts Section** - Live alerts from external systems (NEW!)
+- 🔗 **Health Monitoring** - External system status tracking (NEW!)
 
 📖 **See [WALLET_UI_GUIDE.md](./WALLET_UI_GUIDE.md) for complete wallet setup and usage**
+
+📖 **See [INTEGRATION_GUIDE.md](./INTEGRATION_GUIDE.md) for external API integration setup**
 
 ## ⚙️ Configuration
 
@@ -161,6 +167,13 @@ ADMIN_PASSWORD=your_secure_password_here
 ENABLE_WALLET_UI=true
 SOLANA_PRIVATE_KEY=your_solana_private_key        # Optional
 ETH_PRIVATE_KEY=your_eth_private_key              # Optional
+
+# Optional - External API Integration (NEW!)
+OVERSEER_BOT_AI_URL=https://your-overseer-ai.onrender.com
+OVERSEER_BOT_AI_API_KEY=your_api_key              # Optional
+TOKEN_SCALPER_URL=https://your-token-scalper.onrender.com
+TOKEN_SCALPER_API_KEY=your_api_key                # Optional
+POLL_INTERVAL=15                                   # Seconds between polls
 
 # Optional - Other
 HUGGING_FACE_TOKEN=your_hugging_face_token  # For AI responses
@@ -446,6 +459,7 @@ This project is open source. See repository for license details.
 ## 📞 Support
 
 - 📖 Read the [Complete Documentation](./DOCUMENTATION.md)
+- 🔗 Check [Integration Guide](./INTEGRATION_GUIDE.md) for external API setup
 - 🐛 Report issues on GitHub
 - 💬 Check logs in `overseer_ai.log`
 - 📊 Monitor dashboard at `/`
