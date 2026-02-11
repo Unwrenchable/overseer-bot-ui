@@ -13,6 +13,9 @@ import ccxt
 import re
 import threading
 
+# Import API client for external integrations
+import api_client
+
 # Wallet integrations (optional imports)
 WALLET_ENABLED = False
 try:
@@ -720,6 +723,43 @@ def monitoring_dashboard():
                 color: #888;
                 font-size: 12px;
             }
+            .health-status {
+                font-size: 18px;
+                font-weight: bold;
+                padding: 5px;
+                text-align: center;
+            }
+            .health-healthy { color: #00ff00; }
+            .health-unhealthy { color: #ff0000; }
+            .health-disabled { color: #888; }
+            .health-unknown { color: #ffaa00; }
+            .timestamp {
+                display: block;
+                color: #666;
+                font-size: 10px;
+                text-align: center;
+                margin-top: 5px;
+            }
+            .alert-item {
+                padding: 8px;
+                margin-bottom: 8px;
+                border-left: 4px solid #ffaa00;
+                padding-left: 12px;
+                background: rgba(255, 170, 0, 0.1);
+            }
+            .alert-trade { border-left-color: #00ff00; background: rgba(0, 255, 0, 0.05); }
+            .alert-rugpull { border-left-color: #ff0000; background: rgba(255, 0, 0, 0.05); }
+            .alert-airdrop { border-left-color: #00aaff; background: rgba(0, 170, 255, 0.05); }
+            .alert-status { border-left-color: #ffaa00; background: rgba(255, 170, 0, 0.05); }
+            .alert-time {
+                color: #888;
+                font-size: 11px;
+            }
+            .alert-source {
+                color: #ffaa00;
+                font-size: 11px;
+                font-weight: bold;
+            }
             a { color: #00ff00; }
         </style>
         <script>
@@ -839,6 +879,78 @@ def monitoring_dashboard():
                         '<span class="negative">Error: ' + error.message + '</span>';
                 }
             }
+            
+            async function loadAlertsAndHealth() {
+                try {
+                    const response = await fetch('/api/alerts', {
+                        credentials: 'include'
+                    });
+                    const data = await response.json();
+                    
+                    // Update health status
+                    updateHealthStatus('overseer-ai', data.health.overseer_bot_ai);
+                    updateHealthStatus('token-scalper', data.health.token_scalper);
+                    
+                    // Update alerts display
+                    const alertsLog = document.getElementById('alerts-log');
+                    if (data.alerts && data.alerts.length > 0) {
+                        let alertsHTML = '';
+                        data.alerts.forEach(alert => {
+                            const alertClass = 'alert-' + alert.type;
+                            alertsHTML += '<div class="alert-item ' + alertClass + '">';
+                            alertsHTML += '<div class="alert-time">' + alert.timestamp.substring(0, 19) + '</div>';
+                            alertsHTML += '<div class="alert-source">[' + alert.source.toUpperCase() + ']</div>';
+                            alertsHTML += '<div><strong>' + alert.type.toUpperCase() + ':</strong> ' + alert.message + '</div>';
+                            alertsHTML += '</div>';
+                        });
+                        alertsLog.innerHTML = alertsHTML;
+                    } else {
+                        alertsLog.innerHTML = '<p>No alerts received from external systems yet.</p>';
+                    }
+                } catch (error) {
+                    console.error('Error loading alerts:', error);
+                    document.getElementById('alerts-log').innerHTML = 
+                        '<p class="negative">⚠️ Error loading alerts: ' + error.message + '</p>';
+                }
+            }
+            
+            function updateHealthStatus(prefix, health) {
+                const statusElem = document.getElementById(prefix + '-status');
+                const lastCheckElem = document.getElementById(prefix + '-last-check');
+                
+                let statusText = health.status.toUpperCase();
+                let statusClass = 'health-' + health.status;
+                
+                if (health.status === 'healthy') {
+                    statusText = '✓ HEALTHY';
+                } else if (health.status === 'unhealthy') {
+                    statusText = '✗ UNREACHABLE';
+                } else if (health.status === 'disabled') {
+                    statusText = '○ DISABLED';
+                } else {
+                    statusText = '? UNKNOWN';
+                }
+                
+                statusElem.textContent = statusText;
+                statusElem.className = 'health-status ' + statusClass;
+                
+                if (health.last_check) {
+                    lastCheckElem.textContent = 'Last check: ' + health.last_check.substring(0, 19);
+                } else {
+                    lastCheckElem.textContent = 'Not checked yet';
+                }
+                
+                if (health.error) {
+                    lastCheckElem.textContent += ' - ' + health.error;
+                }
+            }
+            
+            // Load alerts and health on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                loadAlertsAndHealth();
+                // Refresh every 15 seconds
+                setInterval(loadAlertsAndHealth, 15000);
+            });
         </script>
     </head>
     <body>
@@ -874,6 +986,29 @@ def monitoring_dashboard():
                     <div class="status-card">
                         <h3>SAFETY CACHE</h3>
                         <div class="value">{{ safety_cache_count }}</div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🔗 EXTERNAL SYSTEMS HEALTH</h2>
+                    <div class="status-grid">
+                        <div class="status-card">
+                            <h3>OVERSEER-BOT-AI</h3>
+                            <div id="overseer-ai-status" class="health-status">Loading...</div>
+                            <small id="overseer-ai-last-check" class="timestamp">-</small>
+                        </div>
+                        <div class="status-card">
+                            <h3>TOKEN-SCALPER</h3>
+                            <div id="token-scalper-status" class="health-status">Loading...</div>
+                            <small id="token-scalper-last-check" class="timestamp">-</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>🚨 RECENT ALERTS</h2>
+                    <div class="activity-log" id="alerts-log">
+                        <p>Loading alerts...</p>
                     </div>
                 </div>
 
@@ -1013,6 +1148,8 @@ def monitoring_dashboard():
                         <li><a href="/api/prices">/api/prices</a> - Current prices JSON</li>
                         <li><a href="/api/jobs">/api/jobs</a> - Scheduler jobs JSON</li>
                         <li><a href="/api/activities">/api/activities</a> - Recent activities JSON</li>
+                        <li><a href="/api/alerts">/api/alerts</a> - Aggregated alerts from external systems (NEW)</li>
+                        <li><a href="/api/health">/api/health</a> - Health status of external systems (NEW)</li>
                     </ul>
                     
                     <h3>Wallet APIs:</h3>
@@ -1103,6 +1240,23 @@ def api_activities():
     with RECENT_ACTIVITIES_LOCK:
         activities_copy = list(reversed(RECENT_ACTIVITIES))
     return {"activities": activities_copy}
+
+@app.route("/api/alerts")
+@auth.login_required
+def api_alerts():
+    """JSON endpoint for aggregated alerts from external systems"""
+    alerts = api_client.get_alerts(limit=50)
+    health = api_client.get_health_status()
+    return {
+        "alerts": alerts,
+        "health": health
+    }
+
+@app.route("/api/health")
+@auth.login_required
+def api_health():
+    """JSON endpoint for health status of external systems"""
+    return api_client.get_health_status()
 
 # ------------------------------------------------------------
 # WALLET API ROUTES (Optional - requires wallet configuration)
@@ -2273,6 +2427,11 @@ flask_thread = threading.Thread(target=run_flask_app, daemon=True)
 flask_thread.start()
 logging.info(f"Flask monitoring UI started on port {os.getenv('PORT', 5000)}")
 add_activity("STARTUP", f"Monitoring UI available at http://0.0.0.0:{os.getenv('PORT', 5000)}")
+
+# Start API polling for external systems
+api_client.start_polling()
+logging.info("External API polling started")
+add_activity("STARTUP", "External API polling started for overseer-bot-ai and token-scalper")
 
 # ------------------------------------------------------------
 # MAIN LOOP
