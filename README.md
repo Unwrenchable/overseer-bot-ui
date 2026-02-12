@@ -103,12 +103,18 @@ cd overseer-bot-ai
 pip install -r requirements.txt
 
 # 3. Configure environment variables
+# Option A: Interactive setup (recommended)
+python setup_env.py
+
+# Option B: Manual setup
 cp .env.example .env
-# Edit .env with your Twitter API keys
+# Then edit .env with your Twitter API keys and credentials
 
 # 4. Run the bot
 python overseer_bot.py
 ```
+
+> 💡 **Tip:** Use `python setup_env.py` for guided configuration with automatic secure credential generation!
 
 ### Access the Dashboard
 
@@ -135,21 +141,126 @@ Login with credentials from your `.env` file:
 
 ## ⚙️ Configuration
 
-### ⚠️ About .env Files
+### 📝 About .env Files - IMPORTANT!
 
-**Important Security Note:**
-- The repository includes `.env.example` as a **TEMPLATE** (committed to Git)
-- `.env.example` contains NO actual secrets, only placeholders
-- You must create your own `.env` file for actual secrets (NOT committed to Git)
+**🚨 Environment variables in overseer-bot-ui are MANUAL only:**
 
-### Setup Environment Variables
+- ✅ `.env.example` is a **TEMPLATE** committed to Git (contains no secrets)
+- ✅ `.env` must be **MANUALLY CREATED** by you (it's in `.gitignore` and never committed)
+- ❌ The bot does **NOT** auto-create or auto-update `.env` files
+- ❌ There is **NO** automatic configuration management at runtime
 
-**Step 1:** Copy the template:
+**What this means:**
+- You must manually copy `.env.example` to `.env` and edit it yourself
+- Changes to configuration require manually editing the `.env` file
+- The bot reads environment variables at startup using `os.getenv()`
+- For cloud deployments (Render, Heroku, etc.), use platform environment variables
+
+### 🛠️ Setup Environment Variables
+
+**Choose your setup method:**
+
+#### Option 1: Interactive Setup Script (Recommended for beginners)
+
+The easiest way to create your `.env` file with guided prompts:
+
 ```bash
-cp .env.example .env
+# Run the interactive setup script
+python setup_env.py
 ```
 
-**Step 2:** Edit YOUR `.env` file (not .env.example!) with actual values:
+The script will:
+- ✅ Guide you through all required and optional settings
+- ✅ Generate secure passwords and API keys
+- ✅ Validate your inputs
+- ✅ Create a properly formatted `.env` file
+- ✅ Set appropriate file permissions
+
+#### Option 2: Manual Setup
+
+**Platform-specific instructions:**
+
+<details>
+<summary><strong>🐧 Linux / macOS</strong></summary>
+
+```bash
+# Copy the template
+cp .env.example .env
+
+# Edit with your preferred editor
+nano .env
+# or
+vim .env
+# or
+code .env  # VS Code
+
+# Set secure permissions (owner read/write only)
+chmod 600 .env
+
+# Verify it's not tracked by git
+git status  # Should not show .env
+```
+</details>
+
+<details>
+<summary><strong>🪟 Windows (Command Prompt)</strong></summary>
+
+```cmd
+REM Copy the template
+copy .env.example .env
+
+REM Edit with Notepad
+notepad .env
+
+REM Or use any text editor you prefer
+REM - Notepad++
+REM - VS Code
+REM - Sublime Text
+
+REM Verify it's not tracked by git
+git status
+```
+
+**Security Note:** On Windows, right-click `.env` → Properties → Security tab → Restrict access to your user account only.
+</details>
+
+<details>
+<summary><strong>🪟 Windows (PowerShell)</strong></summary>
+
+```powershell
+# Copy the template
+Copy-Item .env.example .env
+
+# Edit with Notepad
+notepad .env
+
+# Or use VS Code
+code .env
+
+# Verify it's not tracked by git
+git status
+```
+</details>
+
+<details>
+<summary><strong>☁️ Cloud Platforms (Render, Heroku, Railway, etc.)</strong></summary>
+
+**Do NOT use .env files on cloud platforms!**
+
+Instead, set environment variables in your platform's dashboard:
+
+- **Render.com**: Dashboard → Environment → Environment Variables
+- **Heroku**: Dashboard → Settings → Config Vars (or use `heroku config:set VAR=value`)
+- **Railway**: Dashboard → Variables tab
+- **AWS**: Use Parameter Store, Secrets Manager, or ECS task definitions
+- **Docker**: Use `--env-file` flag or docker-compose `env_file` directive
+
+See `.env.example` for the complete list of variables and their descriptions.
+</details>
+
+### 📋 Required Configuration Values
+
+Edit your `.env` file with these **required** values:
 
 ```env
 # Twitter API Credentials (Required)
@@ -162,13 +273,19 @@ BEARER_TOKEN=your_twitter_bearer_token
 # Dashboard Authentication (Required)
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=your_secure_password_here
+```
 
-# Optional - Wallet Features (NEW!)
+Get Twitter API credentials from: https://developer.twitter.com/
+
+### 🔧 Optional Configuration Values
+
+```env
+# Optional - Wallet Features
 ENABLE_WALLET_UI=true
 SOLANA_PRIVATE_KEY=your_solana_private_key        # Optional
 ETH_PRIVATE_KEY=your_eth_private_key              # Optional
 
-# Optional - External API Integration (NEW!)
+# Optional - External API Integration
 OVERSEER_BOT_AI_URL=https://your-overseer-ai.onrender.com
 OVERSEER_BOT_AI_API_KEY=your_api_key              # Optional
 TOKEN_SCALPER_URL=https://your-token-scalper.onrender.com
@@ -181,13 +298,11 @@ WEBHOOK_API_KEY=your_webhook_api_key        # For external webhooks
 PORT=5000                                    # Web server port
 ```
 
-**⚠️ CRITICAL:**
-- NEVER commit your `.env` file (it's in `.gitignore`)
-- NEVER put actual secrets in `.env.example`
-- For cloud deployments, use platform environment variables instead
+**See `.env.example` for complete documentation of all variables.**
 
-### Generate Secure Credentials
+### 🔐 Generate Secure Credentials
 
+**Linux / macOS / Git Bash:**
 ```bash
 # Generate secure admin password
 openssl rand -base64 32
@@ -195,6 +310,29 @@ openssl rand -base64 32
 # Generate webhook API key
 openssl rand -hex 32
 ```
+
+**Windows (PowerShell):**
+```powershell
+# Generate secure password (32 characters)
+$bytes = New-Object Byte[] 32
+[Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+[Convert]::ToBase64String($bytes)
+
+# Or use the Python setup script:
+python setup_env.py
+```
+
+### ⚠️ Security Checklist
+
+Before running in production:
+
+- [ ] Created `.env` from `.env.example` template
+- [ ] Changed default `ADMIN_PASSWORD` to a strong password
+- [ ] Generated strong `WEBHOOK_API_KEY` (if using webhooks)
+- [ ] Verified `.env` is in `.gitignore` (it is by default)
+- [ ] Set restrictive file permissions on `.env` (Unix: `chmod 600 .env`)
+- [ ] NEVER commit `.env` to version control
+- [ ] For cloud deployment, use platform environment variables (not `.env` files)
 
 ## 📊 Monitored Tokens
 

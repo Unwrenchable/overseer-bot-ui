@@ -27,9 +27,25 @@ pip install -r requirements.txt
 
 ### Step 2: Configure Twitter API
 
+**Choose your configuration method:**
+
+#### Option A: Interactive Setup (Recommended)
+
+```bash
+# Run the setup wizard
+python setup_env.py
+```
+
+The script will guide you through:
+- Twitter API credentials
+- Admin authentication (with secure password generation)
+- Optional features (wallet, webhooks, etc.)
+
+#### Option B: Manual Configuration
+
 ```bash
 cp .env.example .env
-nano .env
+nano .env  # or use any text editor
 ```
 
 Add your Twitter API credentials:
