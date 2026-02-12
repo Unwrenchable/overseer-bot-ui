@@ -300,6 +300,8 @@ PORT=5000                                    # Web server port
 
 **See `.env.example` for complete documentation of all variables.**
 
+📖 **For detailed setup instructions, troubleshooting, and platform-specific guides, see [ENV_SETUP_GUIDE.md](./ENV_SETUP_GUIDE.md)**
+
 ### 🔐 Generate Secure Credentials
 
 **Linux / macOS / Git Bash:**
@@ -405,6 +407,14 @@ Comprehensive documentation available:
   - Manual token safety checking
   - Manual price checking
   - API usage examples
+
+- 🔧 **[ENV_SETUP_GUIDE.md](./ENV_SETUP_GUIDE.md)** - NEW! Environment Variable Setup Guide
+  - Understanding .env files (manual configuration only)
+  - Interactive setup script usage
+  - Platform-specific setup instructions (Windows, Mac, Linux)
+  - Cloud deployment configuration
+  - Security best practices
+  - Troubleshooting configuration issues
 
 ### Quick Reference
 
