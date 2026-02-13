@@ -1187,6 +1187,7 @@ def monitoring_dashboard():
                         <label>Blockchain:</label>
                         <select id="token-chain">
                             <option value="eth">Ethereum</option>
+                            <option value="solana">Solana</option>
                             <option value="bsc">Binance Smart Chain</option>
                             <option value="polygon">Polygon</option>
                             <option value="arbitrum">Arbitrum</option>
