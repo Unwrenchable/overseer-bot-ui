@@ -59,6 +59,28 @@ Set these on your hosting platform (Render, Heroku, etc.):
 - [ ] **NOT using weak passwords** (< 20 characters)
 - [ ] Credentials are unique (not reused from other services)
 
+### Step 2.5: Choose Instance Type (Render.com)
+
+If deploying to Render.com, decide on your instance type:
+
+#### Free Tier (Default)
+- [ ] Using free tier (0.1 CPU, 512 MB RAM)
+- [ ] Understand that free tier spins down after 15 minutes of inactivity
+- [ ] Expect 30-60 second cold starts when accessing the bot after inactivity
+- [ ] Bot functionality works, but with occasional delays
+
+#### Paid Tiers (Recommended for Production)
+- [ ] Consider upgrading to at least **Starter** ($7/month) for always-on service
+- [ ] Review pricing: https://render.com/pricing
+- [ ] To upgrade: Dashboard → Service → Settings → Instance Type → Update
+- [ ] See detailed upgrade instructions in `render.yaml` (lines 18-54)
+
+**Benefits of Paid Tier:**
+- ✅ No spin down / always-on service
+- ✅ Faster response times (more CPU/RAM)
+- ✅ Better for production use
+- ✅ More reliable scheduled tasks
+
 ### Step 3: Deploy
 
 - [ ] Push code to repository
