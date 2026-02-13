@@ -244,54 +244,67 @@ COINGECKO_MAPPING = {
     'ETH/USDT': 'ethereum'
 }
 
+COINGECKO_CACHE = {}
+COINGECKO_CACHE_TTL = 60  # seconds
+COINGECKO_BACKOFF = 5     # initial backoff in seconds
+COINGECKO_MAX_BACKOFF = 60
+
 def get_token_price_coingecko(symbol):
     """
     Fetch token price from CoinGecko API (fallback when exchanges are geo-blocked).
-    CoinGecko has no geographic restrictions and provides reliable price data.
-    
-    Note: CoinGecko simple API has limitations:
-    - high_24h and low_24h are not available (returns None)
-    - Downstream consumers should handle None values for these fields
-    
-    Returns:
-        dict: Price data with 'source': 'coingecko' or None on error
+    Implements in-memory cache and exponential backoff for rate limits.
     """
-    try:
-        coin_id = COINGECKO_MAPPING.get(symbol)
-        if not coin_id:
-            logging.warning(f"No CoinGecko mapping for {symbol}")
-            return None
-        
-        url = f"https://api.coingecko.com/api/v3/simple/price"
-        params = {
-            'ids': coin_id,
-            'vs_currencies': 'usd',
-            'include_24hr_change': 'true',
-            'include_24hr_vol': 'true'
-        }
-        
-        response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        
-        if coin_id not in data:
-            logging.error(f"CoinGecko returned no data for {coin_id}")
-            return None
-        
-        coin_data = data[coin_id]
-        
-        return {
-            'price': coin_data.get('usd', 0),
-            'high_24h': None,  # CoinGecko simple API doesn't provide this
-            'low_24h': None,   # CoinGecko simple API doesn't provide this
-            'volume_24h': coin_data.get('usd_24h_vol', 0),
-            'change_24h': coin_data.get('usd_24h_change', 0),
-            'timestamp': time.time(),
-            'source': 'coingecko'
-        }
-    except Exception as e:
-        logging.error(f"Failed to fetch price from CoinGecko for {symbol}: {e}")
+    coin_id = COINGECKO_MAPPING.get(symbol)
+    if not coin_id:
+        logging.warning(f"No CoinGecko mapping for {symbol}")
         return None
+    now = time.time()
+    cache_key = f"{symbol}_coingecko"
+    # Use cache if recent
+    if cache_key in COINGECKO_CACHE:
+        cached = COINGECKO_CACHE[cache_key]
+        if now - cached['timestamp'] < COINGECKO_CACHE_TTL:
+            logging.info(f"Using cached CoinGecko price for {symbol}")
+            return cached['data']
+    url = f"https://api.coingecko.com/api/v3/simple/price"
+    params = {
+        'ids': coin_id,
+        'vs_currencies': 'usd',
+        'include_24hr_change': 'true',
+        'include_24hr_vol': 'true'
+    }
+    backoff = COINGECKO_BACKOFF
+    while True:
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            if coin_id not in data:
+                logging.error(f"CoinGecko returned no data for {coin_id}")
+                return None
+            coin_data = data[coin_id]
+            result = {
+                'price': coin_data.get('usd', 0),
+                'high_24h': None,  # CoinGecko simple API doesn't provide this
+                'low_24h': None,   # CoinGecko simple API doesn't provide this
+                'volume_24h': coin_data.get('usd_24h_vol', 0),
+                'change_24h': coin_data.get('usd_24h_change', 0),
+                'timestamp': now,
+                'source': 'coingecko'
+            }
+            COINGECKO_CACHE[cache_key] = {'timestamp': now, 'data': result}
+            return result
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 429:
+                logging.warning(f"CoinGecko rate limited. Backing off {backoff}s...")
+                time.sleep(backoff)
+                backoff = min(backoff * 2, COINGECKO_MAX_BACKOFF)
+                continue
+            logging.error(f"HTTP error from CoinGecko for {symbol}: {e}")
+            return None
+        except Exception as e:
+            logging.error(f"Failed to fetch price from CoinGecko for {symbol}: {e}")
+            return None
 
 def is_geo_restriction_error(exception):
     """

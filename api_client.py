@@ -11,9 +11,12 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
+
 # Configuration from environment variables
 OVERSEER_BOT_AI_URL = os.getenv('OVERSEER_BOT_AI_URL', '')
 OVERSEER_BOT_AI_API_KEY = os.getenv('OVERSEER_BOT_AI_API_KEY', '')
+OVERSEER_BOT_AI_USERNAME = os.getenv('OVERSEER_BOT_AI_USERNAME', '')
+OVERSEER_BOT_AI_PASSWORD = os.getenv('OVERSEER_BOT_AI_PASSWORD', '')
 TOKEN_SCALPER_URL = os.getenv('TOKEN_SCALPER_URL', '')
 TOKEN_SCALPER_API_KEY = os.getenv('TOKEN_SCALPER_API_KEY', '')
 
@@ -213,10 +216,13 @@ def fetch_overseer_bot_ai_status() -> Optional[dict]:
     try:
         url = f"{OVERSEER_BOT_AI_URL.rstrip('/')}/api/status"
         headers = {}
+        auth = None
         if OVERSEER_BOT_AI_API_KEY:
             headers['Authorization'] = f"Bearer {OVERSEER_BOT_AI_API_KEY}"
+        elif OVERSEER_BOT_AI_USERNAME and OVERSEER_BOT_AI_PASSWORD:
+            auth = (OVERSEER_BOT_AI_USERNAME, OVERSEER_BOT_AI_PASSWORD)
         
-        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+        response = requests.get(url, headers=headers, auth=auth, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         
         data = response.json()
@@ -260,10 +266,13 @@ def fetch_overseer_bot_ai_alerts() -> Optional[List[dict]]:
     try:
         url = f"{OVERSEER_BOT_AI_URL.rstrip('/')}/api/alerts"
         headers = {}
+        auth = None
         if OVERSEER_BOT_AI_API_KEY:
             headers['Authorization'] = f"Bearer {OVERSEER_BOT_AI_API_KEY}"
+        elif OVERSEER_BOT_AI_USERNAME and OVERSEER_BOT_AI_PASSWORD:
+            auth = (OVERSEER_BOT_AI_USERNAME, OVERSEER_BOT_AI_PASSWORD)
         
-        response = requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+        response = requests.get(url, headers=headers, auth=auth, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         
         alerts = response.json()
