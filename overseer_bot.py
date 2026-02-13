@@ -99,24 +99,71 @@ bsc_w3 = None
 wallet_address = None
 eth_wallet_address = None
 
-if WALLET_ENABLED and ENABLE_WALLET_UI:
+def is_valid_solana_private_key(key):
+    """Validate that a Solana private key is a valid base58 string."""
+    if not key:
+        return False
+    # Check for common placeholder values
+    if key in ['0', '0x0', 'your_key_here', 'placeholder']:
+        return False
     try:
-        if SOLANA_PRIVATE_KEY:
-            solana_client = SolanaClient(SOLANA_RPC_ENDPOINT)
-            # Parse private key (base58 encoded)
-            private_key_bytes = base58.b58decode(SOLANA_PRIVATE_KEY)
-            solana_keypair = Keypair.from_bytes(private_key_bytes)
-            wallet_address = str(solana_keypair.pubkey())
-            logging.info(f"✅ Solana wallet initialized: {wallet_address[:8]}...{wallet_address[-8:]}")
-        
-        if ETH_PRIVATE_KEY:
-            eth_w3 = Web3(Web3.HTTPProvider(ETH_RPC_ENDPOINT))
-            bsc_w3 = Web3(Web3.HTTPProvider(BSC_RPC_ENDPOINT))
-            eth_account = eth_w3.eth.account.from_key(ETH_PRIVATE_KEY)
-            eth_wallet_address = eth_account.address
-            logging.info(f"✅ ETH/BSC wallet initialized: {eth_wallet_address[:8]}...{eth_wallet_address[-8:]}")
-    except Exception as e:
-        logging.error(f"Failed to initialize wallet: {e}")
+        # Try to decode as base58 - valid keys should be 64 bytes when decoded
+        decoded = base58.b58decode(key)
+        return len(decoded) == 64
+    except Exception:
+        return False
+
+def is_valid_eth_private_key(key):
+    """Validate that an Ethereum private key is a valid hex string."""
+    if not key:
+        return False
+    # Check for common placeholder values
+    if key in ['0', '0x0', 'your_key_here', 'placeholder']:
+        return False
+    # Remove 0x prefix if present
+    clean_key = key[2:] if key.startswith('0x') else key
+    # Valid private keys should be 64 hex characters (32 bytes)
+    if len(clean_key) != 64:
+        return False
+    try:
+        int(clean_key, 16)
+        return True
+    except ValueError:
+        return False
+
+if WALLET_ENABLED and ENABLE_WALLET_UI:
+    # Try to initialize Solana wallet
+    if SOLANA_PRIVATE_KEY:
+        try:
+            if is_valid_solana_private_key(SOLANA_PRIVATE_KEY):
+                solana_client = SolanaClient(SOLANA_RPC_ENDPOINT)
+                # Parse private key (base58 encoded)
+                private_key_bytes = base58.b58decode(SOLANA_PRIVATE_KEY)
+                solana_keypair = Keypair.from_bytes(private_key_bytes)
+                wallet_address = str(solana_keypair.pubkey())
+                logging.info(f"✅ Solana wallet initialized: {wallet_address[:8]}...{wallet_address[-8:]}")
+            else:
+                logging.warning("⚠️ SOLANA_PRIVATE_KEY is set but appears to be invalid or a placeholder. Skipping Solana wallet initialization.")
+        except Exception as e:
+            logging.error(f"Failed to initialize Solana wallet: {e}")
+    
+    # Try to initialize ETH/BSC wallet separately
+    if ETH_PRIVATE_KEY:
+        try:
+            if is_valid_eth_private_key(ETH_PRIVATE_KEY):
+                eth_w3 = Web3(Web3.HTTPProvider(ETH_RPC_ENDPOINT))
+                bsc_w3 = Web3(Web3.HTTPProvider(BSC_RPC_ENDPOINT))
+                eth_account = eth_w3.eth.account.from_key(ETH_PRIVATE_KEY)
+                eth_wallet_address = eth_account.address
+                logging.info(f"✅ ETH/BSC wallet initialized: {eth_wallet_address[:8]}...{eth_wallet_address[-8:]}")
+            else:
+                logging.warning("⚠️ ETH_PRIVATE_KEY is set but appears to be invalid or a placeholder. Skipping ETH/BSC wallet initialization.")
+        except Exception as e:
+            logging.error(f"Failed to initialize ETH/BSC wallet: {e}")
+    
+    # Only disable WALLET_ENABLED if neither wallet was initialized
+    if not wallet_address and not eth_wallet_address:
+        logging.info("No wallets were successfully initialized. Wallet features will be disabled.")
         WALLET_ENABLED = False
 
 client = tweepy.Client(
