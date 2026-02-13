@@ -358,7 +358,13 @@ The repository includes `render.yaml` for one-click deployment:
 2. Connect to [Render.com](https://render.com)
 3. Create a new Web Service
 4. Set environment variables in Render dashboard
-5. Deploy!
+5. **Choose instance type:**
+   - **Free tier**: Good for testing (spins down after inactivity)
+   - **Starter ($7/mo)**: Recommended for production (always-on, no cold starts)
+   - See upgrade instructions in `render.yaml` comments
+6. Deploy!
+
+**📝 Important:** The free tier spins down after 15 minutes of inactivity, causing 30-60 second delays on first access. For production use, upgrade to at least the Starter plan for always-on service.
 
 ### Other Platforms
 
