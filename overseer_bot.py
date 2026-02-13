@@ -101,7 +101,7 @@ eth_wallet_address = None
 
 def is_valid_solana_private_key(key):
     """Validate that a Solana private key is a valid base58 string."""
-    if not key or len(key) < 32:
+    if not key:
         return False
     # Check for common placeholder values
     if key in ['0', '0x0', 'your_key_here', 'placeholder']:
@@ -163,7 +163,7 @@ if WALLET_ENABLED and ENABLE_WALLET_UI:
     
     # Only disable WALLET_ENABLED if neither wallet was initialized
     if not wallet_address and not eth_wallet_address:
-        logging.info("No valid wallet credentials provided. Wallet features will be disabled.")
+        logging.info("No wallets were successfully initialized. Wallet features will be disabled.")
         WALLET_ENABLED = False
 
 client = tweepy.Client(
