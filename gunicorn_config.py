@@ -3,6 +3,11 @@ Gunicorn configuration for Overseer Bot.
 
 This configuration ensures that the bot's scheduler and background tasks
 start properly when run with gunicorn.
+
+CRITICAL: This application MUST use workers=1. The app contains schedulers,
+background tasks, and state that should not be duplicated across workers.
+Multiple workers would cause duplicate tweets, multiple schedulers, and
+race conditions. Do not increase the worker count.
 """
 import logging
 import os
@@ -55,4 +60,7 @@ def post_worker_init(worker):
         # Log the error but don't crash the worker
         # The Flask app can still serve the UI even if bot initialization fails
         logging.error(f"Worker {worker.pid} bot initialization failed: {e}", exc_info=True)
-        logging.warning("Flask UI will be available, but bot services may be limited")
+        logging.warning(
+            "Flask UI will be available, but bot features will be limited. "
+            "Scheduler jobs, API polling, Twitter bot, and activation tweets will not function."
+        )

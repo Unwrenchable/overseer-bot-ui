@@ -2345,7 +2345,13 @@ scheduler = BackgroundScheduler()
 def initialize_bot():
     """
     Initialize the bot by setting up scheduler, starting services, and posting activation tweet.
-    This should only be called once when running the bot, not when importing as a WSGI app.
+    
+    This function should be called once when the bot is started, either:
+    - From the if __name__ == "__main__" block when running directly with Python
+    - From the gunicorn post_worker_init hook when running as a WSGI app
+    
+    It should NOT be called at module import time to allow gunicorn to import the app
+    without triggering initialization.
     """
     # Broadcast every 2-4 hours
     scheduler.add_job(overseer_broadcast, 'interval', minutes=random.randint(BROADCAST_MIN_INTERVAL, BROADCAST_MAX_INTERVAL))
