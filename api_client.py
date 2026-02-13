@@ -91,12 +91,13 @@ def should_log_error(service: str, error_key: str) -> bool:
             return count == 0
         
         # For API errors, log first occurrence, then at exponential intervals
-        # Log at counts: 0 (first), 1, 2, 4, 8, 16, 32, 64, 128, etc.
+        # Log at counts: 0 (first), then 2, 4, 8, 16, 32, 64, 128, etc.
+        # (skip count=1 to allow more time between first and second log)
         if count == 0:
             return True
         
-        # Check if count is a power of 2 (1, 2, 4, 8, 16, ...)
-        return (count & (count - 1)) == 0
+        # Check if count is a power of 2 (2, 4, 8, 16, ...) but skip 1
+        return count >= 2 and (count & (count - 1)) == 0
 
 
 def reset_error_count(service: str, error_key: str):
