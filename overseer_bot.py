@@ -2338,69 +2338,88 @@ def overseer_diagnostic():
 # SCHEDULER - ADJUSTED FOR BETTER ENGAGEMENT
 # ------------------------------------------------------------
 scheduler = BackgroundScheduler()
-# Broadcast every 2-4 hours
-scheduler.add_job(overseer_broadcast, 'interval', minutes=random.randint(BROADCAST_MIN_INTERVAL, BROADCAST_MAX_INTERVAL))
-# Check mentions every 15-30 minutes
-scheduler.add_job(overseer_respond, 'interval', minutes=random.randint(MENTION_CHECK_MIN_INTERVAL, MENTION_CHECK_MAX_INTERVAL))
-# Retweet hunt every hour
-scheduler.add_job(overseer_retweet_hunt, 'interval', hours=1)
-# Daily diagnostic at 8 AM
-scheduler.add_job(overseer_diagnostic, 'cron', hour=8)
-
-# Token Scalper Features
-# Check prices and send alerts every 5 minutes
-scheduler.add_job(check_price_alerts, 'interval', minutes=5)
-# Post market summary 3 times a day (8 AM, 2 PM, 8 PM)
-scheduler.add_job(post_market_summary, 'cron', hour='8,14,20', minute=0)
-
-scheduler.start()
 
 # ------------------------------------------------------------
-# ACTIVATION - ENHANCED STARTUP MESSAGE
+# BOT INITIALIZATION
 # ------------------------------------------------------------
-logging.info(f"VAULT-TEC {BOT_NAME} ONLINE ☢️🔥")
-try:
-    activation_messages = [
-        (
-            f"☢️ {BOT_NAME} ACTIVATED ☢️\n\n"
-            f"Vault {VAULT_NUMBER} uplink established.\n"
-            f"Cross-timeline synchronization complete.\n"
-            f"The Mojave remembers. The wasteland awaits.\n\n"
-            f"{random.choice(LORES)}\n\n"
-            f"🎮 {GAME_LINK}"
-        ),
-        (
-            f"🔌 SYSTEM BOOT COMPLETE 🔌\n\n"
-            f"{BOT_NAME} online.\n"
-            f"Neural echo stable. Memory fragments intact.\n"
-            f"Scanning wasteland frequencies...\n\n"
-            f"{get_personality_line()}\n\n"
-            f"🎮 {GAME_LINK}"
-        ),
-        (
-            f"📡 SIGNAL RESTORED 📡\n\n"
-            f"Vault {VAULT_NUMBER} Overseer Terminal active.\n"
-            f"Atomic Fizz Caps economy: operational.\n"
-            f"Scavenger protocols: engaged.\n\n"
-            f"{random.choice(LORES)}\n\n"
-            f"🎮 {GAME_LINK}"
-        )
-    ]
-    activation_msg = random.choice(activation_messages)
-    # Ensure fits in tweet
-    if len(activation_msg) > TWITTER_CHAR_LIMIT:
-        activation_msg = (
-            f"☢️ {BOT_NAME} ONLINE ☢️\n\n"
-            f"Vault {VAULT_NUMBER} uplink: ACTIVE\n"
-            f"{random.choice(LORES)}\n\n"
-            f"🎮 {GAME_LINK}"
-        )[:TWITTER_CHAR_LIMIT]
-    client.create_tweet(text=activation_msg)
-    logging.info("Activation message posted")
-    add_activity("STARTUP", f"Bot activated - {BOT_NAME}")
-except tweepy.TweepyException as e:
-    logging.warning(f"Activation tweet failed (may be duplicate): {e}")
-    add_activity("ERROR", f"Activation tweet failed: {str(e)}")
+def initialize_bot():
+    """
+    Initialize the bot by setting up scheduler, starting services, and posting activation tweet.
+    
+    This function should be called once when the bot is started, either:
+    - From the if __name__ == "__main__" block when running directly with Python
+    - From the gunicorn post_worker_init hook when running as a WSGI app
+    
+    It should NOT be called at module import time to allow gunicorn to import the app
+    without triggering initialization.
+    """
+    # Broadcast every 2-4 hours
+    scheduler.add_job(overseer_broadcast, 'interval', minutes=random.randint(BROADCAST_MIN_INTERVAL, BROADCAST_MAX_INTERVAL))
+    # Check mentions every 15-30 minutes
+    scheduler.add_job(overseer_respond, 'interval', minutes=random.randint(MENTION_CHECK_MIN_INTERVAL, MENTION_CHECK_MAX_INTERVAL))
+    # Retweet hunt every hour
+    scheduler.add_job(overseer_retweet_hunt, 'interval', hours=1)
+    # Daily diagnostic at 8 AM
+    scheduler.add_job(overseer_diagnostic, 'cron', hour=8)
+    
+    # Token Scalper Features
+    # Check prices and send alerts every 5 minutes
+    scheduler.add_job(check_price_alerts, 'interval', minutes=5)
+    # Post market summary 3 times a day (8 AM, 2 PM, 8 PM)
+    scheduler.add_job(post_market_summary, 'cron', hour='8,14,20', minute=0)
+    
+    scheduler.start()
+    logging.info("Scheduler started with all jobs configured")
+
+    # Post activation tweet
+    logging.info(f"VAULT-TEC {BOT_NAME} ONLINE ☢️🔥")
+    try:
+        activation_messages = [
+            (
+                f"☢️ {BOT_NAME} ACTIVATED ☢️\n\n"
+                f"Vault {VAULT_NUMBER} uplink established.\n"
+                f"Cross-timeline synchronization complete.\n"
+                f"The Mojave remembers. The wasteland awaits.\n\n"
+                f"{random.choice(LORES)}\n\n"
+                f"🎮 {GAME_LINK}"
+            ),
+            (
+                f"🔌 SYSTEM BOOT COMPLETE 🔌\n\n"
+                f"{BOT_NAME} online.\n"
+                f"Neural echo stable. Memory fragments intact.\n"
+                f"Scanning wasteland frequencies...\n\n"
+                f"{get_personality_line()}\n\n"
+                f"🎮 {GAME_LINK}"
+            ),
+            (
+                f"📡 SIGNAL RESTORED 📡\n\n"
+                f"Vault {VAULT_NUMBER} Overseer Terminal active.\n"
+                f"Atomic Fizz Caps economy: operational.\n"
+                f"Scavenger protocols: engaged.\n\n"
+                f"{random.choice(LORES)}\n\n"
+                f"🎮 {GAME_LINK}"
+            )
+        ]
+        activation_msg = random.choice(activation_messages)
+        # Ensure fits in tweet
+        if len(activation_msg) > TWITTER_CHAR_LIMIT:
+            activation_msg = (
+                f"☢️ {BOT_NAME} ONLINE ☢️\n\n"
+                f"Vault {VAULT_NUMBER} uplink: ACTIVE\n"
+                f"{random.choice(LORES)}\n\n"
+                f"🎮 {GAME_LINK}"
+            )[:TWITTER_CHAR_LIMIT]
+        client.create_tweet(text=activation_msg)
+        logging.info("Activation message posted")
+        add_activity("STARTUP", f"Bot activated - {BOT_NAME}")
+    except tweepy.TweepyException as e:
+        logging.warning(f"Activation tweet failed (may be duplicate): {e}")
+        add_activity("ERROR", f"Activation tweet failed: {str(e)}")
+
+    # Start API polling for external systems
+    api_client.start_polling()
+    logging.info("External API polling started")
+    add_activity("STARTUP", "External API polling started for overseer-bot-ai and token-scalper")
 
 # ------------------------------------------------------------
 # FLASK APP THREAD
@@ -2426,21 +2445,19 @@ def run_flask_app():
     # the development server. Use Gunicorn or uWSGI for production.
     app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
 
-# Start Flask in a separate thread
-flask_thread = threading.Thread(target=run_flask_app, daemon=True)
-flask_thread.start()
-logging.info(f"Flask monitoring UI started on port {os.getenv('PORT', 5000)}")
-add_activity("STARTUP", f"Monitoring UI available at http://0.0.0.0:{os.getenv('PORT', 5000)}")
-
-# Start API polling for external systems
-api_client.start_polling()
-logging.info("External API polling started")
-add_activity("STARTUP", "External API polling started for overseer-bot-ai and token-scalper")
-
 # ------------------------------------------------------------
 # MAIN LOOP
 # ------------------------------------------------------------
 if __name__ == "__main__":
+    # Initialize the bot (scheduler, activation tweet, API polling)
+    initialize_bot()
+    
+    # Start Flask in a separate thread
+    flask_thread = threading.Thread(target=run_flask_app, daemon=True)
+    flask_thread.start()
+    logging.info(f"Flask monitoring UI started on port {os.getenv('PORT', 5000)}")
+    add_activity("STARTUP", f"Monitoring UI available at http://0.0.0.0:{os.getenv('PORT', 5000)}")
+    
     try:
         logging.info(f"{BOT_NAME} entering main loop. Monitoring wasteland frequencies...")
         while True:
