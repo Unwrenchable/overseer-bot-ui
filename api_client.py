@@ -91,12 +91,12 @@ def should_log_error(service: str, error_key: str) -> bool:
             return count == 0
         
         # For API errors, log first occurrence, then at exponential intervals
-        # (1, 2, 4, 8, 16, 32, 64, 128, etc.)
+        # Log at counts: 0 (first), 1, 2, 4, 8, 16, 32, 64, 128, etc.
         if count == 0:
             return True
         
-        # Check if count is a power of 2
-        return count > 0 and (count & (count - 1)) == 0
+        # Check if count is a power of 2 (1, 2, 4, 8, 16, ...)
+        return (count & (count - 1)) == 0
 
 
 def reset_error_count(service: str, error_key: str):
@@ -105,6 +105,19 @@ def reset_error_count(service: str, error_key: str):
         key = f"{service}:{error_key}"
         if key in ERROR_COUNTS:
             del ERROR_COUNTS[key]
+
+
+def format_invalid_url_error(url: str) -> str:
+    """
+    Format a consistent error message for invalid URLs
+    
+    Args:
+        url: The invalid URL string
+        
+    Returns:
+        Formatted error message
+    """
+    return f"Invalid URL format: '{url}'. Must start with http:// or https://"
 
 
 def add_alert(alert_type: str, source: str, data: dict, message: str = None):
@@ -190,9 +203,9 @@ def fetch_overseer_bot_ai_status() -> Optional[dict]:
     
     # Validate URL format
     if not is_valid_url(OVERSEER_BOT_AI_URL):
-        error_msg = f"Invalid OVERSEER_BOT_AI_URL format: '{OVERSEER_BOT_AI_URL}'. Must start with http:// or https://"
+        error_msg = format_invalid_url_error(OVERSEER_BOT_AI_URL)
         if should_log_error('overseer_bot_ai', 'invalid_url'):
-            logging.error(error_msg)
+            logging.error(f"Invalid OVERSEER_BOT_AI_URL: {error_msg}")
         update_health_status('overseer_bot_ai', 'unhealthy', error_msg)
         return None
     
@@ -237,9 +250,9 @@ def fetch_overseer_bot_ai_alerts() -> Optional[List[dict]]:
     
     # Validate URL format
     if not is_valid_url(OVERSEER_BOT_AI_URL):
-        error_msg = f"Invalid OVERSEER_BOT_AI_URL format: '{OVERSEER_BOT_AI_URL}'. Must start with http:// or https://"
+        error_msg = format_invalid_url_error(OVERSEER_BOT_AI_URL)
         if should_log_error('overseer_bot_ai', 'invalid_url'):
-            logging.error(error_msg)
+            logging.error(f"Invalid OVERSEER_BOT_AI_URL: {error_msg}")
         update_health_status('overseer_bot_ai', 'unhealthy', error_msg)
         return None
     
@@ -287,9 +300,9 @@ def fetch_token_scalper_status() -> Optional[dict]:
     
     # Validate URL format
     if not is_valid_url(TOKEN_SCALPER_URL):
-        error_msg = f"Invalid TOKEN_SCALPER_URL format: '{TOKEN_SCALPER_URL}'. Must start with http:// or https://"
+        error_msg = format_invalid_url_error(TOKEN_SCALPER_URL)
         if should_log_error('token_scalper', 'invalid_url'):
-            logging.error(error_msg)
+            logging.error(f"Invalid TOKEN_SCALPER_URL: {error_msg}")
         update_health_status('token_scalper', 'unhealthy', error_msg)
         return None
     
@@ -371,11 +384,13 @@ def start_polling():
 if not OVERSEER_BOT_AI_URL:
     update_health_status('overseer_bot_ai', 'disabled', 'No URL configured')
 elif not is_valid_url(OVERSEER_BOT_AI_URL):
-    update_health_status('overseer_bot_ai', 'unhealthy', f"Invalid URL format: '{OVERSEER_BOT_AI_URL}'. Must start with http:// or https://")
-    logging.warning(f"OVERSEER_BOT_AI_URL is invalid: '{OVERSEER_BOT_AI_URL}'. Please provide a valid URL starting with http:// or https://")
+    error_msg = format_invalid_url_error(OVERSEER_BOT_AI_URL)
+    update_health_status('overseer_bot_ai', 'unhealthy', error_msg)
+    logging.warning(f"OVERSEER_BOT_AI_URL is invalid: {error_msg}")
 
 if not TOKEN_SCALPER_URL:
     update_health_status('token_scalper', 'disabled', 'No URL configured')
 elif not is_valid_url(TOKEN_SCALPER_URL):
-    update_health_status('token_scalper', 'unhealthy', f"Invalid URL format: '{TOKEN_SCALPER_URL}'. Must start with http:// or https://")
-    logging.warning(f"TOKEN_SCALPER_URL is invalid: '{TOKEN_SCALPER_URL}'. Please provide a valid URL starting with http:// or https://")
+    error_msg = format_invalid_url_error(TOKEN_SCALPER_URL)
+    update_health_status('token_scalper', 'unhealthy', error_msg)
+    logging.warning(f"TOKEN_SCALPER_URL is invalid: {error_msg}")
