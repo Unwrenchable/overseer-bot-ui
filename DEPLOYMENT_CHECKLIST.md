@@ -73,7 +73,7 @@ If deploying to Render.com, decide on your instance type:
 - [ ] Consider upgrading to at least **Starter** ($7/month) for always-on service
 - [ ] Review pricing: https://render.com/pricing
 - [ ] To upgrade: Dashboard → Service → Settings → Instance Type → Update
-- [ ] See detailed upgrade instructions in `render.yaml` (lines 18-54)
+- [ ] See detailed upgrade instructions in `render.yaml` (Instance Type section)
 
 **Benefits of Paid Tier:**
 - ✅ No spin down / always-on service
