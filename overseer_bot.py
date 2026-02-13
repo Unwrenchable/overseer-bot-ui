@@ -166,19 +166,37 @@ if WALLET_ENABLED and ENABLE_WALLET_UI:
         logging.info("No wallets were successfully initialized. Wallet features will be disabled.")
         WALLET_ENABLED = False
 
-client = tweepy.Client(
-    consumer_key=CONSUMER_KEY,
-    consumer_secret=CONSUMER_SECRET,
-    access_token=ACCESS_TOKEN,
-    access_token_secret=ACCESS_SECRET,
-    bearer_token=BEARER_TOKEN,
-    wait_on_rate_limit=True
-)
+# ------------------------------------------------------------
+# TWITTER INIT
+# ------------------------------------------------------------
 
-auth_v1 = tweepy.OAuth1UserHandler(
-    CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_SECRET
-)
-api_v1 = tweepy.API(auth_v1, wait_on_rate_limit=True)
+# Initialize Twitter clients only if credentials are provided
+client = None
+api_v1 = None
+
+if all([CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_SECRET, BEARER_TOKEN]):
+    try:
+        client = tweepy.Client(
+            consumer_key=CONSUMER_KEY,
+            consumer_secret=CONSUMER_SECRET,
+            access_token=ACCESS_TOKEN,
+            access_token_secret=ACCESS_SECRET,
+            bearer_token=BEARER_TOKEN,
+            wait_on_rate_limit=True
+        )
+
+        auth_v1 = tweepy.OAuth1UserHandler(
+            CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_SECRET
+        )
+        api_v1 = tweepy.API(auth_v1, wait_on_rate_limit=True)
+
+        logging.info("Twitter API clients initialized successfully")
+    except Exception as e:
+        logging.error(f"Failed to initialize Twitter clients: {e}")
+        logging.warning("Bot will start without Twitter functionality")
+else:
+    logging.warning("Twitter API credentials not provided. Twitter bot features will be disabled.")
+    logging.warning("Set CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_SECRET, and BEARER_TOKEN environment variables to enable Twitter features.")
 
 # ------------------------------------------------------------
 # TOKEN SCALPER MODULE - PRICE MONITORING
@@ -2039,6 +2057,10 @@ def get_lore_drop():
 
 def overseer_broadcast():
     """Main broadcast function with varied message types."""
+    if not client:
+        logging.debug("Skipping overseer_broadcast: Twitter client not initialized")
+        return
+
     broadcast_type = random.choice([
         'status_report', 'event_alert', 'lore_drop', 'threat_scan',
         'faction_news', 'fizzco_ad', 'vault_log', 'philosophical'
@@ -2154,6 +2176,10 @@ def overseer_broadcast():
 
 def overseer_respond():
     """Respond to mentions with personality-driven responses."""
+    if not client:
+        logging.debug("Skipping overseer_respond: Twitter client not initialized")
+        return
+
     processed = load_json_set(PROCESSED_MENTIONS_FILE)
     try:
         me = client.get_me()
@@ -2348,6 +2374,10 @@ def generate_contextual_response(username, message):
 
 def overseer_retweet_hunt():
     """Search and retweet relevant content."""
+    if not client:
+        logging.debug("Skipping overseer_retweet_hunt: Twitter client not initialized")
+        return
+
     query = "(Fallout OR Solana OR NFT OR wasteland OR Mojave OR \"Atomic Fizz\" OR \"bottle caps\" OR gaming) filter:media min_faves:5 -is:retweet"
     try:
         tweets = client.search_recent_tweets(query=query, max_results=20)
@@ -2366,6 +2396,10 @@ def overseer_retweet_hunt():
 
 def overseer_diagnostic():
     """Post daily diagnostic/status message."""
+    if not client:
+        logging.debug("Skipping overseer_diagnostic: Twitter client not initialized")
+        return
+
     threat = get_threat_level()
     diag = (
         f"☢️ OVERSEER DIAGNOSTIC ☢️\n\n"
@@ -2420,48 +2454,51 @@ def initialize_bot():
 
     # Post activation tweet
     logging.info(f"VAULT-TEC {BOT_NAME} ONLINE ☢️🔥")
-    try:
-        activation_messages = [
-            (
-                f"☢️ {BOT_NAME} ACTIVATED ☢️\n\n"
-                f"Vault {VAULT_NUMBER} uplink established.\n"
-                f"Cross-timeline synchronization complete.\n"
-                f"The Mojave remembers. The wasteland awaits.\n\n"
-                f"{random.choice(LORES)}\n\n"
-                f"🎮 {GAME_LINK}"
-            ),
-            (
-                f"🔌 SYSTEM BOOT COMPLETE 🔌\n\n"
-                f"{BOT_NAME} online.\n"
-                f"Neural echo stable. Memory fragments intact.\n"
-                f"Scanning wasteland frequencies...\n\n"
-                f"{get_personality_line()}\n\n"
-                f"🎮 {GAME_LINK}"
-            ),
-            (
-                f"📡 SIGNAL RESTORED 📡\n\n"
-                f"Vault {VAULT_NUMBER} Overseer Terminal active.\n"
-                f"Atomic Fizz Caps economy: operational.\n"
-                f"Scavenger protocols: engaged.\n\n"
-                f"{random.choice(LORES)}\n\n"
-                f"🎮 {GAME_LINK}"
-            )
-        ]
-        activation_msg = random.choice(activation_messages)
-        # Ensure fits in tweet
-        if len(activation_msg) > TWITTER_CHAR_LIMIT:
-            activation_msg = (
-                f"☢️ {BOT_NAME} ONLINE ☢️\n\n"
-                f"Vault {VAULT_NUMBER} uplink: ACTIVE\n"
-                f"{random.choice(LORES)}\n\n"
-                f"🎮 {GAME_LINK}"
-            )[:TWITTER_CHAR_LIMIT]
-        client.create_tweet(text=activation_msg)
-        logging.info("Activation message posted")
-        add_activity("STARTUP", f"Bot activated - {BOT_NAME}")
-    except tweepy.TweepyException as e:
-        logging.warning(f"Activation tweet failed (may be duplicate): {e}")
-        add_activity("ERROR", f"Activation tweet failed: {str(e)}")
+    if client:
+        try:
+            activation_messages = [
+                (
+                    f"☢️ {BOT_NAME} ACTIVATED ☢️\n\n"
+                    f"Vault {VAULT_NUMBER} uplink established.\n"
+                    f"Cross-timeline synchronization complete.\n"
+                    f"The Mojave remembers. The wasteland awaits.\n\n"
+                    f"{random.choice(LORES)}\n\n"
+                    f"🎮 {GAME_LINK}"
+                ),
+                (
+                    f"🔌 SYSTEM BOOT COMPLETE 🔌\n\n"
+                    f"{BOT_NAME} online.\n"
+                    f"Neural echo stable. Memory fragments intact.\n"
+                    f"Scanning wasteland frequencies...\n\n"
+                    f"{get_personality_line()}\n\n"
+                    f"🎮 {GAME_LINK}"
+                ),
+                (
+                    f"📡 SIGNAL RESTORED 📡\n\n"
+                    f"Vault {VAULT_NUMBER} Overseer Terminal active.\n"
+                    f"Atomic Fizz Caps economy: operational.\n"
+                    f"Scavenger protocols: engaged.\n\n"
+                    f"{random.choice(LORES)}\n\n"
+                    f"🎮 {GAME_LINK}"
+                )
+            ]
+            activation_msg = random.choice(activation_messages)
+            # Ensure fits in tweet
+            if len(activation_msg) > TWITTER_CHAR_LIMIT:
+                activation_msg = (
+                    f"☢️ {BOT_NAME} ONLINE ☢️\n\n"
+                    f"Vault {VAULT_NUMBER} uplink: ACTIVE\n"
+                    f"{random.choice(LORES)}\n\n"
+                    f"🎮 {GAME_LINK}"
+                )[:TWITTER_CHAR_LIMIT]
+            client.create_tweet(text=activation_msg)
+            logging.info("Activation message posted")
+            add_activity("STARTUP", f"Bot activated - {BOT_NAME}")
+        except tweepy.TweepyException as e:
+            logging.warning(f"Activation tweet failed (may be duplicate): {e}")
+            add_activity("ERROR", f"Activation tweet failed: {str(e)}")
+    else:
+        logging.info("Skipping activation tweet: Twitter client not available")
 
     # Start API polling for external systems
     api_client.start_polling()
