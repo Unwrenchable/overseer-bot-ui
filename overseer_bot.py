@@ -1326,6 +1326,13 @@ def api_alerts():
 def api_health():
     """JSON endpoint for health status of external systems"""
     return api_client.get_health_status()
+# ------------------------------------------------------------
+# PUBLIC HEALTH CHECK ROUTE (for Render)
+# ------------------------------------------------------------
+@app.route("/health")
+def health_check():
+    """Unprotected health check endpoint for Render and load balancers."""
+    return {"status": "ok"}, 200
 
 # ------------------------------------------------------------
 # WALLET API ROUTES (Optional - requires wallet configuration)
