@@ -43,10 +43,16 @@ def post_worker_init(worker):
     """
     logging.info(f"Worker {worker.pid} initialized, starting bot services")
     
-    # Import here to avoid issues with module loading order
-    from overseer_bot import initialize_bot
-    
-    # Initialize the bot (scheduler, API polling, activation tweet)
-    initialize_bot()
-    
-    logging.info(f"Worker {worker.pid} bot services started")
+    try:
+        # Import here to avoid issues with module loading order
+        from overseer_bot import initialize_bot
+        
+        # Initialize the bot (scheduler, API polling, activation tweet)
+        initialize_bot()
+        
+        logging.info(f"Worker {worker.pid} bot services started successfully")
+    except Exception as e:
+        # Log the error but don't crash the worker
+        # The Flask app can still serve the UI even if bot initialization fails
+        logging.error(f"Worker {worker.pid} bot initialization failed: {e}", exc_info=True)
+        logging.warning("Flask UI will be available, but bot services may be limited")
