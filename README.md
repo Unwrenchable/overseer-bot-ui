@@ -102,6 +102,9 @@ cd overseer-bot-ai
 # 2. Install dependencies
 pip install -r requirements.txt
 
+# Note: Production deployments use requirements-lock.txt for faster builds
+# See DEPENDENCIES.md for details on dependency management
+
 # 3. Configure environment variables
 # Option A: Interactive setup (recommended)
 python setup_env.py
@@ -448,11 +451,13 @@ See [Security Guide](./DOCUMENTATION.md#-security-setup) for details.
 ```
 overseer-bot-ai/
 ├── overseer_bot.py          # Main bot application
-├── requirements.txt         # Python dependencies
+├── requirements.txt         # Python dependencies (development)
+├── requirements-lock.txt    # Locked dependencies (production)
 ├── .env.example            # Environment template
 ├── render.yaml             # Render.com config
 ├── README.md               # This file
 ├── DOCUMENTATION.md        # Complete documentation
+├── DEPENDENCIES.md         # Dependency management guide
 └── price_cache.json        # Price cache (generated)
 ```
 
