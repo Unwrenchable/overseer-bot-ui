@@ -9,6 +9,7 @@ import threading
 import time
 from datetime import datetime
 from typing import Dict, List, Optional
+from urllib.parse import urlparse
 
 # Configuration from environment variables
 OVERSEER_BOT_AI_URL = os.getenv('OVERSEER_BOT_AI_URL', '')
@@ -41,6 +42,83 @@ HEALTH_STATUS = {
     }
 }
 HEALTH_STATUS_LOCK = threading.Lock()
+
+# Error tracking to reduce log noise
+ERROR_COUNTS = {}
+ERROR_COUNTS_LOCK = threading.Lock()
+
+
+def is_valid_url(url: str) -> bool:
+    """
+    Validate that a URL has a proper scheme (http:// or https://)
+    
+    Args:
+        url: URL string to validate
+        
+    Returns:
+        True if URL has a valid scheme, False otherwise
+    """
+    if not url or not url.strip():
+        return False
+    
+    try:
+        parsed = urlparse(url)
+        return parsed.scheme in ('http', 'https') and bool(parsed.netloc)
+    except Exception:
+        return False
+
+
+def should_log_error(service: str, error_key: str) -> bool:
+    """
+    Determine if an error should be logged based on error frequency
+    Uses exponential backoff to reduce log noise for repeated failures
+    
+    Args:
+        service: Service name (e.g., 'overseer_bot_ai', 'token_scalper')
+        error_key: Unique key for the error type
+        
+    Returns:
+        True if error should be logged, False to suppress
+    """
+    with ERROR_COUNTS_LOCK:
+        key = f"{service}:{error_key}"
+        count = ERROR_COUNTS.get(key, 0)
+        ERROR_COUNTS[key] = count + 1
+        
+        # Log first occurrence only for invalid_url (configuration errors)
+        # These won't change during runtime, so no need to keep logging
+        if error_key == 'invalid_url':
+            return count == 0
+        
+        # For API errors, log first occurrence, then at exponential intervals
+        # Log at counts: 0 (first), then 2, 4, 8, 16, 32, 64, 128, etc.
+        # (skip count=1 to allow more time between first and second log)
+        if count == 0:
+            return True
+        
+        # Check if count is a power of 2 (2, 4, 8, 16, ...) but skip 1
+        return count >= 2 and (count & (count - 1)) == 0
+
+
+def reset_error_count(service: str, error_key: str):
+    """Reset error count when a service recovers"""
+    with ERROR_COUNTS_LOCK:
+        key = f"{service}:{error_key}"
+        if key in ERROR_COUNTS:
+            del ERROR_COUNTS[key]
+
+
+def format_invalid_url_error(url: str) -> str:
+    """
+    Format a consistent error message for invalid URLs
+    
+    Args:
+        url: The invalid URL string
+        
+    Returns:
+        Formatted error message
+    """
+    return f"Invalid URL format: '{url}'. Must start with http:// or https://"
 
 
 def add_alert(alert_type: str, source: str, data: dict, message: str = None):
@@ -124,6 +202,14 @@ def fetch_overseer_bot_ai_status() -> Optional[dict]:
     if not OVERSEER_BOT_AI_URL:
         return None
     
+    # Validate URL format
+    if not is_valid_url(OVERSEER_BOT_AI_URL):
+        error_msg = format_invalid_url_error(OVERSEER_BOT_AI_URL)
+        if should_log_error('overseer_bot_ai', 'invalid_url'):
+            logging.error(f"Invalid OVERSEER_BOT_AI_URL: {error_msg}")
+        update_health_status('overseer_bot_ai', 'unhealthy', error_msg)
+        return None
+    
     try:
         url = f"{OVERSEER_BOT_AI_URL.rstrip('/')}/api/status"
         headers = {}
@@ -135,6 +221,7 @@ def fetch_overseer_bot_ai_status() -> Optional[dict]:
         
         data = response.json()
         update_health_status('overseer_bot_ai', 'healthy')
+        reset_error_count('overseer_bot_ai', 'fetch_status')
         
         # Add status as an alert
         add_alert(
@@ -146,7 +233,8 @@ def fetch_overseer_bot_ai_status() -> Optional[dict]:
         
         return data
     except requests.exceptions.RequestException as e:
-        logging.error(f"Failed to fetch overseer-bot-ai status: {e}")
+        if should_log_error('overseer_bot_ai', 'fetch_status'):
+            logging.error(f"Failed to fetch overseer-bot-ai status: {e}")
         update_health_status('overseer_bot_ai', 'unhealthy', str(e))
         return None
 
@@ -161,6 +249,14 @@ def fetch_overseer_bot_ai_alerts() -> Optional[List[dict]]:
     if not OVERSEER_BOT_AI_URL:
         return None
     
+    # Validate URL format
+    if not is_valid_url(OVERSEER_BOT_AI_URL):
+        error_msg = format_invalid_url_error(OVERSEER_BOT_AI_URL)
+        if should_log_error('overseer_bot_ai', 'invalid_url'):
+            logging.error(f"Invalid OVERSEER_BOT_AI_URL: {error_msg}")
+        update_health_status('overseer_bot_ai', 'unhealthy', error_msg)
+        return None
+    
     try:
         url = f"{OVERSEER_BOT_AI_URL.rstrip('/')}/api/alerts"
         headers = {}
@@ -172,6 +268,7 @@ def fetch_overseer_bot_ai_alerts() -> Optional[List[dict]]:
         
         alerts = response.json()
         update_health_status('overseer_bot_ai', 'healthy')
+        reset_error_count('overseer_bot_ai', 'fetch_alerts')
         
         # Add each alert to our history
         if isinstance(alerts, list):
@@ -186,7 +283,8 @@ def fetch_overseer_bot_ai_alerts() -> Optional[List[dict]]:
         
         return alerts
     except requests.exceptions.RequestException as e:
-        logging.error(f"Failed to fetch overseer-bot-ai alerts: {e}")
+        if should_log_error('overseer_bot_ai', 'fetch_alerts'):
+            logging.error(f"Failed to fetch overseer-bot-ai alerts: {e}")
         update_health_status('overseer_bot_ai', 'unhealthy', str(e))
         return None
 
@@ -201,6 +299,14 @@ def fetch_token_scalper_status() -> Optional[dict]:
     if not TOKEN_SCALPER_URL:
         return None
     
+    # Validate URL format
+    if not is_valid_url(TOKEN_SCALPER_URL):
+        error_msg = format_invalid_url_error(TOKEN_SCALPER_URL)
+        if should_log_error('token_scalper', 'invalid_url'):
+            logging.error(f"Invalid TOKEN_SCALPER_URL: {error_msg}")
+        update_health_status('token_scalper', 'unhealthy', error_msg)
+        return None
+    
     try:
         url = f"{TOKEN_SCALPER_URL.rstrip('/')}/api/status"
         headers = {}
@@ -212,6 +318,7 @@ def fetch_token_scalper_status() -> Optional[dict]:
         
         data = response.json()
         update_health_status('token_scalper', 'healthy')
+        reset_error_count('token_scalper', 'fetch_status')
         
         # Add status as an alert
         add_alert(
@@ -223,7 +330,8 @@ def fetch_token_scalper_status() -> Optional[dict]:
         
         return data
     except requests.exceptions.RequestException as e:
-        logging.error(f"Failed to fetch token-scalper status: {e}")
+        if should_log_error('token_scalper', 'fetch_status'):
+            logging.error(f"Failed to fetch token-scalper status: {e}")
         update_health_status('token_scalper', 'unhealthy', str(e))
         return None
 
@@ -276,5 +384,14 @@ def start_polling():
 # Initialize health status on module load
 if not OVERSEER_BOT_AI_URL:
     update_health_status('overseer_bot_ai', 'disabled', 'No URL configured')
+elif not is_valid_url(OVERSEER_BOT_AI_URL):
+    error_msg = format_invalid_url_error(OVERSEER_BOT_AI_URL)
+    update_health_status('overseer_bot_ai', 'unhealthy', error_msg)
+    logging.warning(f"OVERSEER_BOT_AI_URL is invalid: {error_msg}")
+
 if not TOKEN_SCALPER_URL:
     update_health_status('token_scalper', 'disabled', 'No URL configured')
+elif not is_valid_url(TOKEN_SCALPER_URL):
+    error_msg = format_invalid_url_error(TOKEN_SCALPER_URL)
+    update_health_status('token_scalper', 'unhealthy', error_msg)
+    logging.warning(f"TOKEN_SCALPER_URL is invalid: {error_msg}")
