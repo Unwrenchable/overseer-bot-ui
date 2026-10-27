@@ -23,7 +23,9 @@ Use this checklist to ensure secure deployment of the Overseer Bot AI with authe
 - [ ] Test locally:
   ```bash
   python overseer_bot.py
-  # Should see security warning if using default password
+  # Production-like startup (gunicorn, Render, ENV=production) refuses to start
+  # when ADMIN_PASSWORD is missing. Local script runs print an ephemeral
+  # password to stderr when it is unset.
   ```
 - [ ] Test dashboard access (should require login)
 - [ ] Test API endpoints (should require auth)
@@ -55,7 +57,7 @@ Set these on your hosting platform (Render, Heroku, etc.):
 ### Step 2: Verify Configuration
 
 - [ ] All environment variables are set
-- [ ] **NOT using default password** (`vault77secure`)
+- [ ] **`ADMIN_PASSWORD` is a newly generated secret** (no built-in default). If this service ever started with the old built-in password, rotate it.
 - [ ] **NOT using weak passwords** (< 20 characters)
 - [ ] Credentials are unique (not reused from other services)
 
