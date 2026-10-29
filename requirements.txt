@@ -1,6 +1,6 @@
 tweepy>=4.14.0
 apscheduler>=3.10.4
-requests>=2.31.0
+requests>=2.33.0
 flask>=3.0.0
 flask-httpauth>=4.8.0
 gunicorn>=22.0.0
