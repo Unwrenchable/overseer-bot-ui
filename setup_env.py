@@ -211,10 +211,16 @@ def setup_twitter_credentials(env_vars):
     return env_vars
 
 
+# Retired password that used to be hard-coded in the application.
+# Never write this value. If a local .env still has it, replace it.
+_RETIRED_ADMIN_PASSWORD = "vault77secure"
+
+
 def setup_admin_auth(env_vars):
     """Setup admin authentication."""
     print_header("Admin Authentication")
     print_info("These credentials protect your monitoring dashboard")
+    print_info("ADMIN_PASSWORD is required. Production refuses to start if it is missing.")
     print()
     
     # Username
@@ -224,7 +230,13 @@ def setup_admin_auth(env_vars):
     
     # Password
     current_password = env_vars.get('ADMIN_PASSWORD', '')
-    if current_password and current_password != 'vault77secure':
+    if current_password == _RETIRED_ADMIN_PASSWORD:
+        print_warning(
+            "ADMIN_PASSWORD is the retired insecure default. "
+            "Production will refuse to start until it is replaced."
+        )
+        current_password = ""
+    if current_password:
         print_info("A password is already set")
         if prompt_yes_no("Generate a new secure password?", default=False):
             password = generate_secure_password()

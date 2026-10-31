@@ -102,9 +102,9 @@ Open your browser and navigate to:
 http://localhost:5000
 ```
 
-Login with credentials from your `.env` file:
+Login with credentials from your environment:
 - **Username:** Value of `ADMIN_USERNAME` (default: `admin`)
-- **Password:** Value of `ADMIN_PASSWORD` (**⚠️ CHANGE THIS!**)
+- **Password:** Value of `ADMIN_PASSWORD` (required; no built-in password). Production refuses to start if it is missing. In local development, an unset password is a random value printed to stderr at startup.
 
 ---
 
@@ -392,7 +392,7 @@ curl -X POST http://localhost:5000/api/price/check \
 
 ### 2. Admin Authentication
 
-**Change default password:**
+**Set the admin password (required):**
 ```bash
 # Generate secure password
 openssl rand -base64 32
