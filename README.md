@@ -126,9 +126,11 @@ Open your browser and navigate to:
 http://localhost:5000
 ```
 
-Login with credentials from your `.env` file:
+Login with credentials from your environment:
 - **Username:** Value of `ADMIN_USERNAME` (default: `admin`)
-- **Password:** Value of `ADMIN_PASSWORD` (**⚠️ CHANGE THIS!**)
+- **Password:** Value of `ADMIN_PASSWORD` (required; there is no built-in password)
+
+`ADMIN_PASSWORD` must be set for a stable login. In production the process refuses to start when it is missing or blank. In local development and tests, if it is unset, a random password is generated for that process and printed to stderr. It changes on every restart.
 
 **New UI Features:**
 - 📊 **Monitoring Tab** - Real-time bot status and automated tasks
@@ -278,6 +280,8 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD=your_secure_password_here
 ```
 
+`ADMIN_PASSWORD` is required. The application does not ship with a password. Production exits at startup if `ADMIN_PASSWORD` is missing. Generate one with `openssl rand -base64 32`.
+
 Get Twitter API credentials from: https://developer.twitter.com/
 
 ### 🔧 Optional Configuration Values
@@ -332,7 +336,7 @@ python setup_env.py
 Before running in production:
 
 - [ ] Created `.env` from `.env.example` template
-- [ ] Changed default `ADMIN_PASSWORD` to a strong password
+- [ ] Set `ADMIN_PASSWORD` to a strong generated secret (required; production will not start without it)
 - [ ] Generated strong `WEBHOOK_API_KEY` (if using webhooks)
 - [ ] Verified `.env` is in `.gitignore` (it is by default)
 - [ ] Set restrictive file permissions on `.env` (Unix: `chmod 600 .env`)
@@ -436,7 +440,7 @@ Comprehensive documentation available:
 
 **⚠️ IMPORTANT:** Before deploying to production:
 
-1. ✅ Change default `ADMIN_PASSWORD`
+1. ✅ Set `ADMIN_PASSWORD` (required). Production refuses to start if it is missing. If a deployment ever ran with the old built-in default, rotate that password.
 2. ✅ Generate strong `WEBHOOK_API_KEY`
 3. ✅ Enable HTTPS (automatic on most platforms)
 4. ✅ Review security warnings in logs
@@ -543,8 +547,12 @@ curl -X POST http://localhost:5000/token-scalper-alert \
 
 **Dashboard not accessible?**
 - Check `PORT` environment variable (default: 5000)
-- Verify `ADMIN_USERNAME` and `ADMIN_PASSWORD` in `.env`
+- Verify `ADMIN_USERNAME` and `ADMIN_PASSWORD` are set. Production will not start without `ADMIN_PASSWORD`.
+- In local development, if `ADMIN_PASSWORD` is unset, use the ephemeral password printed to stderr at startup.
 - Check firewall rules if deployed remotely
+
+**Process exits as soon as it starts?**
+- Read the log for `Refusing to start`. `ADMIN_PASSWORD` is required in production and must not be the retired built-in default.
 
 **Price data missing?**
 - Binance may be geo-blocked (bot uses CoinGecko fallback)

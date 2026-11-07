@@ -16,8 +16,8 @@ This PR adds comprehensive security to the Overseer Bot AI by implementing multi
 
 - **Configuration:**
   - `ADMIN_USERNAME` - Username for dashboard access (default: `admin`)
-  - `ADMIN_PASSWORD` - Password for dashboard access (default: `vault77secure`)
-  - ⚠️ **MUST be changed in production!**
+  - `ADMIN_PASSWORD` - Password for dashboard access (required; no built-in default)
+  - ⚠️ **Production refuses to start if `ADMIN_PASSWORD` is missing.**
 
 ### 2. Webhook API Key Authentication
 - **Protected Routes:**

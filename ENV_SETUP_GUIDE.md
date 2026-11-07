@@ -321,7 +321,7 @@ If not specified, these defaults are used:
 | Variable | Default Value |
 |----------|---------------|
 | ADMIN_USERNAME | admin |
-| ADMIN_PASSWORD | vault77secure (⚠️ CHANGE THIS!) |
+| ADMIN_PASSWORD | none — required in production (startup fails if missing). Dev/test generates a random ephemeral password when unset. |
 | ENABLE_WALLET_UI | true |
 | PORT | 5000 |
 | POLL_INTERVAL | 15 |
@@ -384,7 +384,7 @@ python -c "import secrets; print(secrets.token_hex(32))"
 ### Security Checklist
 
 - [ ] `.env` file created from template
-- [ ] All default passwords changed
+- [ ] `ADMIN_PASSWORD` set to a generated secret (there is no built-in password)
 - [ ] Strong passwords used (20+ characters)
 - [ ] File permissions set to 600 (Unix) or restricted (Windows)
 - [ ] `.env` confirmed in `.gitignore`
@@ -397,7 +397,7 @@ python -c "import secrets; print(secrets.token_hex(32))"
 ❌ Never commit `.env` to version control
 ❌ Never share `.env` in chat, email, or screenshots
 ❌ Never put actual secrets in `.env.example`
-❌ Never use default passwords in production
+❌ Never deploy without `ADMIN_PASSWORD` (production refuses to start)
 ❌ Never store `.env` in cloud storage unencrypted
 ❌ Never reuse passwords across services
 

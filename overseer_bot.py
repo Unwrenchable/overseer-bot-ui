@@ -1,4 +1,6 @@
 import os
+import secrets
+import sys
 import time
 import logging
 import random
@@ -62,17 +64,129 @@ ACCESS_SECRET = os.getenv('ACCESS_SECRET')
 BEARER_TOKEN = os.getenv('BEARER_TOKEN')
 HUGGING_FACE_TOKEN = os.getenv('HUGGING_FACE_TOKEN')
 
+# Retired value previously committed as an ADMIN_PASSWORD fallback.
+# Compared only so production refuses to boot with that known secret.
+_RETIRED_ADMIN_PASSWORD = "vault77secure"
+_DEV_ENV_NAMES = {"development", "dev", "test", "testing", "local"}
+_PROD_ENV_NAMES = {"production", "prod"}
+
+
+def _explicit_environment_names():
+    """Non-empty APP_ENV / ENV / ENVIRONMENT / FLASK_ENV values, lowercased."""
+    names = []
+    for key in ("APP_ENV", "ENV", "ENVIRONMENT", "FLASK_ENV"):
+        value = os.getenv(key)
+        if value and value.strip():
+            names.append(value.strip().lower())
+    return names
+
+
+def _truthy_env(name):
+    value = os.getenv(name)
+    if value is None:
+        return False
+    return value.strip().lower() not in {"", "0", "false", "no", "off"}
+
+
+def _running_under_gunicorn():
+    if "gunicorn" in sys.modules:
+        return True
+    argv0 = os.path.basename(sys.argv[0]) if sys.argv else ""
+    return argv0 == "gunicorn" or argv0.startswith("gunicorn")
+
+
+def _is_production_environment():
+    """Missing secrets abort startup unless this is an explicit dev/test run.
+
+    Hosted platforms and gunicorn are production even when the process was
+    started as a script. A direct ``python overseer_bot.py`` with no hosting
+    markers is development, matching the local run command. Any other import
+    fails closed.
+    """
+    if os.getenv("PYTEST_CURRENT_TEST") or "pytest" in sys.modules:
+        return False
+
+    modes = _explicit_environment_names()
+    # Any explicit production marker wins, including over a dev marker.
+    if any(mode in _PROD_ENV_NAMES for mode in modes):
+        return True
+
+    if (
+        _truthy_env("RENDER")
+        or os.getenv("RENDER_SERVICE_ID")
+        or os.getenv("RENDER_EXTERNAL_URL")
+        or os.getenv("DYNO")
+        or _running_under_gunicorn()
+    ):
+        return True
+
+    if any(mode in _DEV_ENV_NAMES for mode in modes):
+        return False
+
+    # Local script entrypoint (python overseer_bot.py), no hosting markers.
+    if __name__ == "__main__":
+        return False
+
+    return True
+
+
+def _resolve_admin_password():
+    """Load ADMIN_PASSWORD. Never fall back to a committed literal.
+
+    Production: missing, blank, or the retired default is a startup error.
+    Development and test: a missing value is replaced with a process-local
+    random secret. An explicitly configured value is kept.
+    """
+    configured = os.getenv("ADMIN_PASSWORD")
+    if configured is not None:
+        configured = configured.strip()
+
+    if configured == _RETIRED_ADMIN_PASSWORD:
+        message = (
+            "ADMIN_PASSWORD is set to a retired insecure default that was previously "
+            "hard-coded in this application. That secret is public and must be rotated "
+            "(for example: openssl rand -base64 32). Refusing to start in production."
+        )
+        if _is_production_environment():
+            logging.error(message)
+            raise RuntimeError(message)
+        logging.warning(message)
+        logging.warning(
+            "Development/test is allowing the retired ADMIN_PASSWORD only because it "
+            "was set explicitly. Replace it before any production deploy."
+        )
+        return configured
+
+    if configured:
+        return configured
+
+    if _is_production_environment():
+        message = (
+            "ADMIN_PASSWORD is required in production but is not set. "
+            "Set the ADMIN_PASSWORD environment variable to a strong secret "
+            "(for example: openssl rand -base64 32) and restart. Refusing to start."
+        )
+        logging.error(message)
+        raise RuntimeError(message)
+
+    generated = secrets.token_urlsafe(32)
+    logging.warning(
+        "ADMIN_PASSWORD is not set. Generated a random ephemeral password for this "
+        "development/test process. It is not written to disk and changes on every "
+        "restart. Set ADMIN_PASSWORD to use a stable password. The generated password "
+        "was printed to stderr and was not written to the log file."
+    )
+    print(
+        "DEV/TEST ONLY: ephemeral ADMIN_PASSWORD for this process "
+        f"(not for production): {generated}",
+        file=sys.stderr,
+    )
+    return generated
+
+
 # Admin authentication credentials
 ADMIN_USERNAME = os.getenv('ADMIN_USERNAME', 'admin')
-ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD', 'vault77secure')
-
-# Security warning for default credentials
-if ADMIN_PASSWORD == 'vault77secure':
-    logging.warning("="*60)
-    logging.warning("⚠️  SECURITY WARNING: Using default admin password!")
-    logging.warning("⚠️  Change ADMIN_PASSWORD in production immediately!")
-    logging.warning("⚠️  Generate secure password: openssl rand -base64 32")
-    logging.warning("="*60)
+ADMIN_PASSWORD = _resolve_admin_password()
 
 # Webhook API key for external services (like Token-scalper)
 WEBHOOK_API_KEY = os.getenv('WEBHOOK_API_KEY', '')  # Empty = no authentication required

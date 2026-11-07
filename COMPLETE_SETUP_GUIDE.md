@@ -433,7 +433,7 @@ docker run -p 5000:5000 --env-file .env overseer-bot
 
 Before going to production:
 
-- [ ] Change default `ADMIN_PASSWORD`
+- [ ] Set `ADMIN_PASSWORD` to a generated secret (required; no built-in default)
 - [ ] Generate strong `WEBHOOK_API_KEY`
 - [ ] Use HTTPS (automatic on Render/Heroku)
 - [ ] Never commit `.env` file
